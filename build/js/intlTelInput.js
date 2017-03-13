@@ -418,7 +418,7 @@
             // update flag on keyup
             // (keep this listener separate otherwise the setTimeout breaks all the tests)
             this.telInput.on("keyup" + this.ns, function() {
-                if (that._updateFlagFromNumber(that.telInput.val())) {
+                if (that._updateFlagFromNumber(that.telInput.val(), false)) {
                     that._triggerCountryChange();
                 }
             });
@@ -426,7 +426,7 @@
             this.telInput.on("cut" + this.ns + " paste" + this.ns, function() {
                 // hack because "paste" event is fired before input is updated
                 setTimeout(function() {
-                    if (that._updateFlagFromNumber(that.telInput.val())) {
+                    if (that._updateFlagFromNumber(that.telInput.val(), false)) {
                         that._triggerCountryChange();
                     }
                 });
@@ -642,15 +642,8 @@
         },
         // check if need to select a new flag based on the given number
         // Note: called from _setInitialState, keyup handler, setNumber
-        _updateFlagFromNumber: function(number) {
-            // if we're in nationalMode and we already have US/Canada selected, make sure the number starts with a +1 so _getDialCode will be able to extract the area code
-            // update: if we dont yet have selectedCountryData, but we're here (trying to update the flag from the number), that means we're initialising the plugin with a number that already has a dial code, so fine to ignore this bit
-            if (number && this.options.nationalMode && this.selectedCountryData.dialCode == "1" && number.charAt(0) != "+") {
-                if (number.charAt(0) != "1") {
-                    number = "1" + number;
-                }
-                number = "+" + number;
-            }
+        _updateFlagFromNumber: function(number, unmodified) {
+            unmodified = unmodified === undefined ? true : unmodified;
             // try and extract valid dial code from input
             var dialCode = this._getDialCode(number), countryCode = null, numeric = this._getNumeric(number);
             if (dialCode) {
@@ -677,9 +670,16 @@
             } else if (!number || number == "+") {
                 // empty, or just a plus, so default
                 countryCode = this.options.displayFlagOnEmptyCountryCode ? this.defaultCountry : "";
+            } else if (unmodified && number && number.charAt(0) != "+") {
+                // if number without + sign is present then we should use blank country instead
+                countryCode = this.options.displayFlagOnEmptyCountryCode ? this.defaultCountry : "";
             }
             if (countryCode !== null) {
-                return this._setFlag(countryCode);
+                if (this.options.displayFlagOnEmptyCountryCode === false && !number) {
+                    return this._setFlag(this.defaultCountry);
+                } else {
+                    return this._setFlag(countryCode);
+                }
             }
             return false;
         },
