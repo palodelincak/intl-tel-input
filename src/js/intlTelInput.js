@@ -16,6 +16,8 @@ var pluginName = "intlTelInput",
     excludeCountries: [],
     // format the input value during initialisation and on setNumber
     formatOnDisplay: true,
+    // display country flag only if the country code is present
+    displayFlagOnEmptyCountryCode: true,
     // geoIp lookup function
     geoIpLookup: null,
     // initial country
@@ -523,7 +525,7 @@ Plugin.prototype = {
 
     // on focus: if empty, insert the dial code for the currently selected flag
     this.telInput.on("focus" + this.ns, function(e) {
-      if (!that.telInput.val() && !that.telInput.prop("readonly") && that.selectedCountryData.dialCode) {
+      if (!that.telInput.val() && !that.telInput.prop("readonly") && that.selectedCountryData && that.selectedCountryData.dialCode) {
         // insert the dial code
         that.telInput.val("+" + that.selectedCountryData.dialCode);
         // after auto-inserting a dial code, if the first key they hit is '+' then assume they are entering a new number, so remove the dial code. use keypress instead of keydown because keydown gets triggered for the shift key (required to hit the + key), and instead of keyup because that shows the new '+' before removing the old one
@@ -804,7 +806,7 @@ Plugin.prototype = {
       countryCode = "";
     } else if (!number || number == "+") {
       // empty, or just a plus, so default
-      countryCode = this.defaultCountry;
+      countryCode = this.options.displayFlagOnEmptyCountryCode ? this.defaultCountry : "";
     }
 
     if (countryCode !== null) {
